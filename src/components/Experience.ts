@@ -1,4 +1,4 @@
-import { OrbitControls } from "three/examples/jsm/Addons.js";
+import { GLTFExporter, OrbitControls } from "three/examples/jsm/Addons.js";
 import * as THREE from "three/webgpu";
 import {
   Fn,
@@ -15,6 +15,9 @@ import {
   abs,
   float,
   cos,
+  mul,
+  add,
+  sub,
 } from "three/tsl";
 import MathNode from "three/src/nodes/math/MathNode.js";
 import OperatorNode from "three/src/nodes/math/OperatorNode.js";
@@ -26,16 +29,24 @@ export class Experience {
   private _camera: THREE.PerspectiveCamera;
   private _renderer: THREE.WebGPURenderer;
   private _controls: OrbitControls;
-  constructor(canvas: HTMLCanvasElement) {
+  private _size: { width: number; height: number } | null = null;
+  constructor(
+    canvas: HTMLCanvasElement,
+    size?: { width: number; height: number }
+  ) {
     this._canvas = canvas;
-
+    if (size) {
+      this._size = size;
+    }
     this._camera = new THREE.PerspectiveCamera(
       25,
-      window.innerWidth / window.innerHeight,
+      this._size
+        ? this._size.width / this._size.height
+        : window.innerWidth / window.innerHeight,
       0.1,
       100
     );
-    this._camera.position.set(0, 0, 5);
+    this._camera.position.set(0, 0, 10);
 
     this._scene = new THREE.Scene();
 
@@ -44,7 +55,13 @@ export class Experience {
       canvas: this._canvas,
     });
     this._renderer.setPixelRatio(window.devicePixelRatio);
-    this._renderer.setSize(window.innerWidth, window.innerHeight);
+
+    if (this._size) {
+      this._renderer.setSize(this._size.width, this._size.height);
+    } else {
+      this._renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
     this._renderer.setAnimationLoop(this.animate);
 
     this._controls = new OrbitControls(this._camera, this._renderer.domElement);
@@ -56,105 +73,6 @@ export class Experience {
     this._controls.target.x = 0;
 
     window.addEventListener("resize", this.onWindowResize);
-
-    this.defaultPlane();
-  }
-
-  private defaultPlane = () => {
-    const planeSize = { width: 2, height: 2 };
-    const boxGeometry = new THREE.BoxGeometry(
-      planeSize.width,
-      planeSize.height,
-      1,
-      64,
-      64,
-      64
-    );
-
-    const boxMaterial = new THREE.MeshStandardNodeMaterial({
-      transparent: false,
-      side: THREE.FrontSide,
-    });
-
-    const samplerTexture = new THREE.TextureLoader().load("/uv_grid.jpg");
-    samplerTexture.wrapS = THREE.RepeatWrapping;
-    samplerTexture.colorSpace = THREE.SRGBColorSpace;
-
-    const aspectUvs = () => {
-      const uvs = uv();
-
-      const planeAspect = float(planeSize.width).div(planeSize.height);
-      const aspectUvs = uvs.mul(vec2(planeAspect, 1));
-      return aspectUvs;
-    };
-
-    const repeatedUvsGen = (repeatation: number) => {
-      const uvs = aspectUvs();
-      const repeatedUvs = uvs.mul(repeatation);
-      return repeatedUvs;
-    };
-
-    const scrollingUvs = (
-      uvs: THREE.ShaderNodeObject<OperatorNode>,
-      offset: THREE.ShaderNodeObject<THREE.Node>
-    ) => {
-      const scrollingUvs = uvs.add(time.mul(offset));
-      return scrollingUvs;
-    };
-
-    const paletteNode = (uvs: THREE.ShaderNodeObject<MathNode>) => {
-      const a = vec3(0.5, 0.5, 0.5);
-      const b = vec3(0.5, 0.5, 0.5);
-      const c = vec3(1, 1, 1);
-      const d = vec3(0.263, 0.416, 0.557);
-      const ab = a.add(b);
-
-      const td = uvs.add(d);
-      const ctd = c.mul(td).mul(6.28);
-      const cosctd = cos(ctd);
-      const palette = ab.add(cosctd);
-      return palette;
-    };
-
-    boxMaterial.colorNode = Fn(() => {
-      const scaledTime = time.mul(0.5);
-
-      const repeatedUvs = scrollingUvs(repeatedUvsGen(10), vec2(0, 2));
-
-      const fractUvs = vec2(
-        repeatedUvs.x.fract().sub(0.5),
-        repeatedUvs.y.fract().sub(0.5)
-      );
-      const len = float(0.02).div(
-        abs(sin(length(fractUvs).add(scaledTime).mul(8.0)).div(8))
-      );
-
-      const uvs1 = length(uv());
-
-      const palette = paletteNode(uvs1);
-
-      const lenVec = vec3(len, len, len);
-      const pl = palette.mul(lenVec);
-
-      const vec4Pl = vec4(pl, 1.0);
-
-      return vec4Pl;
-    })();
-
-    boxMaterial.positionNode = Fn(() => {
-      const position = positionLocal.toVec3().toVar();
-      const cosY = cos(position.y.mul(2));
-      const sinY = sin(position.y.mul(2));
-      const positionLocalVec = vec3(
-        position.x.mul(cosY).sub(position.z.mul(sinY)),
-        position.y.mul(1.5),
-        position.x.mul(sinY).add(position.z.mul(cosY))
-      );
-      return positionLocalVec;
-    })();
-
-    const box = new THREE.Mesh(boxGeometry, boxMaterial);
-    this._scene.add(box);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(0, 5, 5);
@@ -171,13 +89,58 @@ export class Experience {
     const directionalLight4 = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight4.position.set(0, 5, -5);
     this._scene.add(directionalLight4);
+  }
+  private _box: THREE.Mesh | null = null;
+  public defaultBox = (colorNode: () => THREE.Node) => {
+    if (this._box) {
+      this._scene.remove(this._box);
+    }
+    const planeSize = { width: 2, height: 2 };
+    const boxGeometry = new THREE.BoxGeometry(
+      planeSize.width,
+      planeSize.height,
+      1,
+      64,
+      64,
+      64
+    );
+
+    const boxMaterial = new THREE.MeshStandardNodeMaterial({
+      transparent: false,
+      side: THREE.FrontSide,
+    });
+
+    boxMaterial.positionNode = Fn(() => {
+      const position = positionLocal.toVec3().toVar();
+      const cosY = cos(position.y.mul(2));
+      const sinY = sin(position.y.mul(2));
+      const positionLocalVec = vec3(
+        position.x.mul(cosY).sub(position.z.mul(sinY)),
+        position.y.mul(1.5),
+        position.x.mul(sinY).add(position.z.mul(cosY))
+      );
+      return positionLocalVec;
+    })();
+
+    boxMaterial.colorNode = colorNode();
+
+    const box = new THREE.Mesh(boxGeometry, boxMaterial);
+    this._scene.add(box);
+    this._box = box;
   };
 
   private onWindowResize = () => {
-    this._camera.aspect = window.innerWidth / window.innerHeight;
+    if (this._size) {
+      this._camera.aspect = this._size.width / this._size.height;
+    } else {
+      this._camera.aspect = window.innerWidth / window.innerHeight;
+    }
     this._camera.updateProjectionMatrix();
-
-    this._renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this._size) {
+      this._renderer.setSize(this._size.width, this._size.height);
+    } else {
+      this._renderer.setSize(window.innerWidth, window.innerHeight);
+    }
   };
 
   private animate = () => {
