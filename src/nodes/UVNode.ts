@@ -1,17 +1,7 @@
 import { Input, Output, schema, Node } from "@nodl/core";
 import { z } from "zod";
 
-import {
-  uv,
-  add,
-  vec2,
-  vec3,
-  vec4,
-  ConvertType,
-  Operator,
-  cos,
-  Fn,
-} from "three/tsl";
+import { uv, add, vec2, vec3, vec4, cos, Fn } from "three/tsl";
 import { combineLatest, map, of } from "rxjs";
 
 const UVSchema = schema(z.any());
@@ -23,7 +13,7 @@ export class UV extends Node {
     value: new Output({
       name: "Value",
       type: UVSchema,
-      observable: of(() => uv()),
+      observable: of(uv),
     }),
   };
 }
@@ -123,7 +113,7 @@ export class Add extends Node {
       defaultValue: () => vec2(0, 0),
     }),
     b: new Input({
-      name: "Value",
+      name: "Value2",
       type: AddInputSchema,
       defaultValue: () => vec2(0, 0),
     }),
@@ -152,7 +142,7 @@ export class Mul extends Node {
       defaultValue: () => vec2(0, 0),
     }),
     b: new Input({
-      name: "Value",
+      name: "Value2",
       type: MulInputSchema,
       defaultValue: () => vec2(0, 0),
     }),

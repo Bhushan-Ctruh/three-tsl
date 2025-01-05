@@ -42,8 +42,8 @@ d.inputs.a.next(0.263);
 d.inputs.b.next(0.416);
 d.inputs.c.next(0.557);
 
-a.outputs.value.connect(ab.inputs.a);
-b.outputs.value.connect(ab.inputs.b);
+// a.outputs.value.connect(ab.inputs.a);
+// b.outputs.value.connect(ab.inputs.b);
 
 uvNode.outputs.value.connect(td.inputs.a);
 d.outputs.value.connect(td.inputs.b);
