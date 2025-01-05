@@ -1,26 +1,26 @@
-import { GLTFExporter, OrbitControls } from "three/examples/jsm/Addons.js";
+import { OrbitControls } from "three/examples/jsm/Addons.js";
 import * as THREE from "three/webgpu";
-import {
-  Fn,
-  vec4,
-  uv,
-  time,
-  sin,
-  vec2,
-  positionLocal,
-  vec3,
-  fract,
-  length,
-  div,
-  abs,
-  float,
-  cos,
-  mul,
-  add,
-  sub,
-} from "three/tsl";
-import MathNode from "three/src/nodes/math/MathNode.js";
-import OperatorNode from "three/src/nodes/math/OperatorNode.js";
+// import {
+//   Fn,
+//   vec4,
+//   uv,
+//   time,
+//   sin,
+//   vec2,
+//   positionLocal,
+//   vec3,
+//   fract,
+//   length,
+//   div,
+//   abs,
+//   float,
+//   cos,
+//   mul,
+//   add,
+//   sub,
+// } from "three/tsl";
+// import MathNode from "three/src/nodes/math/MathNode.js";
+// import OperatorNode from "three/src/nodes/math/OperatorNode.js";
 
 export class Experience {
   private _canvas: HTMLCanvasElement;
@@ -93,7 +93,16 @@ export class Experience {
   private _box: THREE.Mesh | null = null;
   public defaultBox = (colorNode: () => THREE.Node) => {
     if (this._box) {
-      this._scene.remove(this._box);
+      // this._scene.remove(this._box);
+      //@ts-expect-error
+      this._box.material?.dispose();
+      const boxMaterial = new THREE.MeshStandardNodeMaterial({
+        transparent: false,
+        side: THREE.FrontSide,
+      });
+      boxMaterial.colorNode = colorNode();
+      this._box.material = boxMaterial;
+      return;
     }
     const planeSize = { width: 2, height: 2 };
     const boxGeometry = new THREE.BoxGeometry(
@@ -109,20 +118,18 @@ export class Experience {
       transparent: false,
       side: THREE.FrontSide,
     });
-
-    boxMaterial.positionNode = Fn(() => {
-      const position = positionLocal.toVec3().toVar();
-      const cosY = cos(position.y.mul(2));
-      const sinY = sin(position.y.mul(2));
-      const positionLocalVec = vec3(
-        position.x.mul(cosY).sub(position.z.mul(sinY)),
-        position.y.mul(1.5),
-        position.x.mul(sinY).add(position.z.mul(cosY))
-      );
-      return positionLocalVec;
-    })();
-
     boxMaterial.colorNode = colorNode();
+    // boxMaterial.positionNode = Fn(() => {
+    //   const position = positionLocal.toVec3().toVar();
+    //   const cosY = cos(position.y.mul(2));
+    //   const sinY = sin(position.y.mul(2));
+    //   const positionLocalVec = vec3(
+    //     position.x.mul(cosY).sub(position.z.mul(sinY)),
+    //     position.y.mul(1.5),
+    //     position.x.mul(sinY).add(position.z.mul(cosY))
+    //   );
+    //   return positionLocalVec;
+    // })();
 
     const box = new THREE.Mesh(boxGeometry, boxMaterial);
     this._scene.add(box);
