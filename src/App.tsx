@@ -8,8 +8,10 @@ import {
 import "./App.css";
 import { Experience } from "./components/Experience";
 import { Node } from "@nodl/core";
-import { Circuit, CircuitStore } from "@nodl/react";
 import { Add, BaseColorNode, Cos, Mul, UV, Vec3, Vec4 } from "./nodes/UVNode";
+import { Circuit, CircuitStore } from "./nodl-react";
+
+export let currentScale = 1;
 
 const a = new Vec3();
 const b = new Vec3();
@@ -268,7 +270,6 @@ function App() {
     if (!nodeCanvas) return;
     const nodeCanvasEle = nodeCanvas as HTMLDivElement;
 
-    let currentScale = 1;
     let currentTranslate = { x: 0, y: 0 };
     let panning = false;
 
