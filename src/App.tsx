@@ -7,19 +7,25 @@ import {
 } from "react";
 import "./App.css";
 import { Experience } from "./components/Experience";
-import { Node } from "@nodl/core";
+import { Node } from "./nodl-core";
 import { Add, BaseColorNode, Cos, Mul, UV, Vec3, Vec4 } from "./nodes/UVNode";
 import { Circuit, CircuitStore } from "./nodl-react";
 
 export let currentScale = 1;
 
 const a = new Vec3();
+
 const b = new Vec3();
 const c = new Vec3();
 const d = new Vec3();
 const uvNode = new UV();
 
 const ab = new Add();
+
+// setTimeout(() => {
+ab.addInputPort();
+//   alert("Added");
+// }, 1000);
 const td = new Add();
 const ctd = new Mul();
 const cosctd = new Cos();

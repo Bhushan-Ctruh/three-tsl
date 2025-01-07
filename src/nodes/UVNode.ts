@@ -1,4 +1,4 @@
-import { Input, Output, schema, Node } from "@nodl/core";
+import { Input, Output, schema, Node } from "../nodl-core";
 import { z } from "zod";
 
 import { uv, add, vec2, vec3, vec4, cos, Fn } from "three/tsl";
@@ -34,6 +34,24 @@ export class Vec2 extends Node {
       ),
     }),
   };
+
+  // addInputPort = () => {
+  //   const inputIndex = Object.keys(this.inputs).length;
+  //   this.inputs[`input${inputIndex}`] = new Input({
+  //     name: `Input${inputIndex}`,
+  //     type: schema(z.number()),
+  //     defaultValue: 0,
+  //   });
+  //   this.onUpdate();
+  // };
+
+  // onUpdate = () => {
+  //   console.log("onUpdate");
+  // };
+
+  // addOnUpdate = (fn: () => void) => {
+  //   this.onUpdate = fn;
+  // };
 }
 
 const Vec3Schema = schema(z.any());
@@ -55,6 +73,23 @@ export class Vec3 extends Node {
       ]).pipe(map((inputs) => () => vec3(inputs[0], inputs[1], inputs[2]))),
     }),
   };
+  // addInputPort = () => {
+  //   const inputIndex = Object.keys(this.inputs).length;
+  //   this.inputs[`input${inputIndex}`] = new Input({
+  //     name: `Input${inputIndex}`,
+  //     type: schema(z.number()),
+  //     defaultValue: 0,
+  //   });
+  //   this.onUpdate();
+  // };
+
+  // onUpdate = () => {
+  //   console.log("onUpdate");
+  // };
+
+  // addOnUpdate = (fn: () => void) => {
+  //   this.onUpdate = fn;
+  // };
 }
 
 const Vec4Schema = schema(z.any());
@@ -104,6 +139,15 @@ export class BaseColorNode extends Node {
 
 //Nodes for three tsl operators
 const AddInputSchema = schema(z.any());
+
+const i = new Input({
+  name: "Value",
+  type: AddInputSchema,
+  defaultValue: () => vec2(0, 0),
+});
+
+console.log(i, "SAMPLEINPUT");
+
 export class Add extends Node {
   name = "Add";
   inputs = {
@@ -123,12 +167,41 @@ export class Add extends Node {
     output: new Output({
       name: "Output",
       type: AddInputSchema,
-      observable: combineLatest([this.inputs.a, this.inputs.b]).pipe(
+      observable: combineLatest([...Object.values(this.inputs)]).pipe(
         map((inputs) => {
-          return () => add(inputs[0](), inputs[1]());
+          return () => add(...inputs.map((i) => i()));
         })
       ),
     }),
+  };
+
+  addInputPort = () => {
+    const inputIndex = Object.keys(this.inputs).length;
+
+    this.inputs[`${inputIndex}`] = new Input({
+      name: `${inputIndex}`,
+      type: schema(z.any()),
+      defaultValue: () => vec2(0, 0),
+    });
+
+    const inputs = Object.values(this.inputs);
+    const newObservable = combineLatest(inputs).pipe(
+      map((inputs) => {
+        return () => add(...inputs.map((i) => i()));
+      })
+    );
+
+    this.outputs.output.updateObservable(newObservable);
+
+    this.onUpdate();
+  };
+
+  onUpdate = () => {
+    console.log("onUpdate");
+  };
+
+  addOnUpdate = (fn: () => void) => {
+    this.onUpdate = fn;
   };
 }
 

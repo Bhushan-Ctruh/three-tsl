@@ -26,9 +26,13 @@ export const Node = observer(({ node, actions, window }: NodeProps) => {
   const { onMouseEnter, onMouseLeave, isHovered } = useHover();
   const { store } = React.useContext(StoreContext);
 
+  const [_, setRefresh] = React.useState(0);
+
   React.useEffect(() => {
     if (ref.current) {
       store.setNodeElement(node.id, ref.current);
+
+      node.addOnUpdate && node.addOnUpdate(() => setRefresh((r) => r + 1));
 
       return () => {
         store.removeNodeElement(node.id);

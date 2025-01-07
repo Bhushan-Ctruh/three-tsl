@@ -1,4 +1,4 @@
-import { Node, Input, Output, schema } from "@nodl/core";
+import { Node, Input, Output, schema } from "./nodl-core";
 import { Circuit, CircuitStore } from "./nodl-react";
 import { combineLatest, map } from "rxjs";
 import { z } from "zod";
