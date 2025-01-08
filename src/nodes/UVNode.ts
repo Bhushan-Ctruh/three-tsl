@@ -130,6 +130,8 @@ export class BaseColorNode extends Node {
       type: BaseColorSchema,
       observable: combineLatest([this.inputs.a]).pipe(
         map((inputs) => {
+          console.log(inputs, "INPUTS");
+
           return Fn(() => inputs[0]());
         })
       ),
@@ -139,14 +141,6 @@ export class BaseColorNode extends Node {
 
 //Nodes for three tsl operators
 const AddInputSchema = schema(z.any());
-
-const i = new Input({
-  name: "Value",
-  type: AddInputSchema,
-  defaultValue: () => vec2(0, 0),
-});
-
-console.log(i, "SAMPLEINPUT");
 
 export class Add extends Node {
   name = "Add";
@@ -177,12 +171,14 @@ export class Add extends Node {
 
   addInputPort = () => {
     const inputIndex = Object.keys(this.inputs).length;
-
-    this.inputs[`${inputIndex}`] = new Input({
-      name: `${inputIndex}`,
-      type: schema(z.any()),
-      defaultValue: () => vec2(0, 0),
-    });
+    this.inputs = {
+      ...this.inputs,
+      [`input${inputIndex}`]: new Input({
+        name: `Input${inputIndex}`,
+        type: schema(z.any()),
+        defaultValue: () => vec2(0, 0),
+      }),
+    };
 
     const inputs = Object.values(this.inputs);
     const newObservable = combineLatest(inputs).pipe(
