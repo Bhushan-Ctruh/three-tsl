@@ -8,7 +8,7 @@ import {
 import "./App.css";
 import { Experience } from "./components/Experience";
 import { Node } from "./nodl-core";
-import { BaseColorNode, Cos, Mul, UV } from "./nodes/UVNode";
+import { MeshStandardMaterialNode } from "./nodes/MaterialNodes";
 import { Circuit, CircuitStore } from "./nodl-react";
 import { Pane } from "tweakpane";
 import {
@@ -22,7 +22,7 @@ import {
 } from "./nodes/ConstantNodes";
 import { toCartesianPoint } from "./nodl-react/utils/coordinates/coordinates";
 import { Subscription } from "rxjs";
-import { Add, MathNodes } from "./nodes/MathNodes";
+import { MathNodes } from "./nodes/MathNodes";
 import { AttributeNodes } from "./nodes/AttributeNodes";
 import {
   FloatUniform,
@@ -31,73 +31,8 @@ import {
   Vec2Uniform,
   Vec3Uniform,
 } from "./nodes/UniformNodes";
-console.log(Add);
 
 export let currentScale = 1;
-
-// const a = new Vec3();
-
-// const b = new Vec3();
-// const c = new Vec3();
-// const d = new Vec3();
-// const e = new Vec4();
-// const f = new Vec4();
-// const g = new Vec2();
-// const h = new Vec2();
-
-// const i = new Float();
-
-// const uvNode = new UV();
-
-// const add = new Add();
-
-// const split = new SplitVec3();
-
-// setTimeout(() => {
-// ab.addInputPort();
-//   alert("Added");
-// }, 1000);
-// const td = new Add();
-// const ctd = new Mul();
-// const cosctd = new Cos();
-// const palette = new Add();
-// const finalColor = new Vec4();
-
-const baseColor = new BaseColorNode();
-
-// a.inputs.a.next(0.5);
-// a.inputs.b.next(0.5);
-// a.inputs.c.next(0.5);
-
-// b.inputs.a.next(0.5);
-// b.inputs.b.next(0.5);
-// b.inputs.c.next(0.5);
-
-// c.inputs.a.next(1);
-// c.inputs.b.next(1);
-// c.inputs.c.next(1);
-
-// d.inputs.a.next(0.263);
-// d.inputs.b.next(0.416);
-// d.inputs.c.next(0.557);
-
-// a.outputs.value.connect(ab.inputs.a);
-// b.outputs.value.connect(ab.inputs.b);
-
-// uvNode.outputs.value.connect(td.inputs.a);
-// d.outputs.value.connect(td.inputs.b);
-
-// c.outputs.value.connect(ctd.inputs.a);
-// td.outputs.output.connect(ctd.inputs.b);
-
-// ctd.outputs.output.connect(cosctd.inputs.a);
-
-// ab.outputs.output.connect(palette.inputs.a);
-// cosctd.outputs.output.connect(palette.inputs.b);
-
-// palette.outputs.output.connect(finalColor.inputs.a);
-
-// finalColor.outputs.value.connect(baseColor.inputs.a);
 
 const store = new CircuitStore();
 
@@ -112,8 +47,8 @@ const useNodeWindowResolver = () => {
       node instanceof Uint
     ) {
       return <VecUI node={node} />;
-    } else if (node instanceof BaseColorNode) {
-      return <BaseColorUI node={node} />;
+    } else if (node instanceof MeshStandardMaterialNode) {
+      return <MeshStandardMaterialUI node={node} />;
     } else if (
       node instanceof Vec2Uniform ||
       node instanceof Vec3Uniform ||
@@ -309,7 +244,11 @@ const TextureUniformUI = ({ node }: { node: TextureUniform }) => {
   );
 };
 
-const BaseColorUI = ({ node }: { node: BaseColorNode }) => {
+const MeshStandardMaterialUI = ({
+  node,
+}: {
+  node: MeshStandardMaterialNode;
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const experienceRef = useRef<Experience | null>(null);
@@ -355,28 +294,7 @@ function App() {
   const nodeWindowResolver = useNodeWindowResolver();
 
   useLayoutEffect(() => {
-    store.setNodes([
-      // [a, { x: 0, y: 450 }],
-      // [split, { x: 300, y: 450 }],
-      // [b, { x: 0, y: 150 }],
-      // [c, { x: 0, y: -150 }],
-      // [d, { x: 0, y: -450 }],
-      // [e, { x: 0, y: -750 }],
-      // [f, { x: 300, y: -750 }],
-      // [add, { x: 300, y: 300 }],
-      // [g, { x: 500, y: -650 }],
-      // [h, { x: 500, y: -300 }],
-      // [i, { x: 800, y: -350 }],
-      // // [uvNode, { x: 0, y: -750 }],
-      // // [ab, { x: 300, y: 300 }],
-      // // [td, { x: 300, y: -650 }],
-      // // [ctd, { x: 600, y: -300 }],
-      // // [cosctd, { x: 900, y: -300 }],
-      // // [palette, { x: 1200, y: 300 }],
-      // // [finalColor, { x: 1500, y: 600 }],
-      // [new Float(), { x: 115, y: 149 }],
-      [baseColor, { x: 500, y: 0 }],
-    ]);
+    store.setNodes([[new MeshStandardMaterialNode(), { x: 300, y: 0 }]]);
 
     return () => {
       store.dispose();
