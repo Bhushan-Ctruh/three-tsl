@@ -402,6 +402,121 @@ function App() {
     setContainerBound(rect);
   }, []);
 
+  const DraggableChip = ({
+    nodeName,
+    nodeType,
+  }: {
+    nodeName: string;
+    nodeType: string;
+  }) => {
+    return (
+      <div
+        draggable={true}
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", `${nodeName}-${nodeType}`);
+        }}
+        style={{
+          textAlign: "center",
+          padding: "10px",
+          backgroundColor: "var(--dark-background)",
+          cursor: "grab",
+          borderRadius: "12px",
+          margin: "5px 0px",
+        }}
+      >
+        <div>{nodeName}</div>
+      </div>
+    );
+  };
+
+  const ChipContainer = ({ children }: { children: React.ReactNode }) => {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flexWrap: "nowrap",
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+
+  const pane = useRef<Pane>(null!);
+
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+
+    pane.current = new Pane({
+      container: sidebarRef.current,
+      title: "Nodes",
+      expanded: true,
+    });
+
+    const makeButtonsDraggable = (
+      btn: HTMLElement,
+      nodeName: string,
+      nodeType: string
+    ) => {
+      btn.style.cursor = "grab !important";
+      btn.draggable = true;
+      btn.addEventListener("dragstart", (e) => {
+        e.dataTransfer?.setData("text/plain", `${nodeName}-${nodeType}`);
+      });
+    };
+
+    const constantNodesFolder = pane.current.addFolder({
+      title: "Constants",
+    });
+
+    Object.keys(ConstantNodes).forEach((node) => {
+      const btn = constantNodesFolder.addButton({
+        title: node,
+      });
+      makeButtonsDraggable(btn.element, node, "ConstantNodes");
+    });
+
+    const mathNodesFolder = pane.current.addFolder({
+      title: "Math",
+    });
+
+    Object.keys(MathNodes).forEach((node) => {
+      const btn = mathNodesFolder.addButton({
+        title: node,
+      });
+      makeButtonsDraggable(btn.element, node, "MathNodes");
+    });
+
+    const attributeNodesFolder = pane.current.addFolder({
+      title: "Attributes",
+    });
+
+    Object.keys(AttributeNodes).forEach((node) => {
+      const btn = attributeNodesFolder.addButton({
+        title: node,
+      });
+      makeButtonsDraggable(btn.element, node, "AttributeNodes");
+    });
+
+    const uniformNodesFolder = pane.current.addFolder({
+      title: "Uniforms",
+    });
+
+    Object.keys(UniformNodes).forEach((node) => {
+      const btn = uniformNodesFolder.addButton({
+        title: node,
+      });
+      makeButtonsDraggable(btn.element, node, "UniformNodes");
+    });
+
+    return () => {
+      pane.current.dispose();
+    };
+  }, []);
+
   return (
     <>
       <div
@@ -417,76 +532,47 @@ function App() {
         <div
           style={{
             height: "100vh",
-            width: "200px",
+            minWidth: "250px",
             position: "absolute",
             zIndex: 1000,
             left: 0,
             top: 0,
-            background: "white",
+            backgroundColor: "var(--panel-background)",
             border: "1px solid red",
+            // padding: "10px 20px",
+            color: "var(--text-light-color)",
+            fontFamily: `"Inter", sans-serif;`,
+            overflow: "auto",
           }}
+          ref={sidebarRef}
         >
           {/* drag and droppable Nodes */}
-          <h1>Constants</h1>
-          {Object.keys(ConstantNodes).map((nodeName) => {
-            return (
-              <div
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData(
-                    "text/plain",
-                    `${nodeName}-ConstantNodes`
-                  );
-                }}
-              >
-                <div>{nodeName}</div>
-              </div>
-            );
-          })}
+          {/* <h1>Constants</h1>
+          <ChipContainer>
+            {Object.keys(ConstantNodes).map((nodeName) => (
+              <DraggableChip nodeName={nodeName} nodeType="ConstantNodes" />
+            ))}
+          </ChipContainer>
           <h1>Math</h1>
-          {Object.keys(MathNodes).map((nodeName) => {
-            return (
-              <div
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", `${nodeName}-MathNodes`);
-                }}
-              >
-                <div>{nodeName}</div>
-              </div>
-            );
-          })}
+          <ChipContainer>
+            <div>
+              {Object.keys(MathNodes).map((nodeName) => (
+                <DraggableChip nodeType="MathNodes" nodeName={nodeName} />
+              ))}
+            </div>
+          </ChipContainer>
           <h1>Attributes</h1>
-          {Object.keys(AttributeNodes).map((nodeName) => {
-            return (
-              <div
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData(
-                    "text/plain",
-                    `${nodeName}-AttributeNodes`
-                  );
-                }}
-              >
-                <div>{nodeName}</div>
-              </div>
-            );
-          })}
-          {Object.keys(UniformNodes).map((nodeName) => {
-            return (
-              <div
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData(
-                    "text/plain",
-                    `${nodeName}-UniformNodes`
-                  );
-                }}
-              >
-                <div>{nodeName}</div>
-              </div>
-            );
-          })}
+          <ChipContainer>
+            {Object.keys(AttributeNodes).map((nodeName) => (
+              <DraggableChip nodeType="AttributeNodes" nodeName={nodeName} />
+            ))}
+          </ChipContainer>
+          <h1>Uniforms</h1>
+          <ChipContainer>
+            {Object.keys(UniformNodes).map((nodeName) => (
+              <DraggableChip nodeType="UniformNodes" nodeName={nodeName} />
+            ))}
+          </ChipContainer> */}
         </div>
 
         <div
