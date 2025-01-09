@@ -21,11 +21,13 @@
     "react-dom": "^18.3.1",
     "rxjs": "^7.8.1",
     "three": "^0.171.0",
+    "tweakpane": "^4.0.5",
     "uuid": "^11.0.4",
     "zod": "^3.21.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
+    "@tweakpane/core": "^2.0.5",
     "@types/color": "^4.2.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

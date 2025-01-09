@@ -106,7 +106,7 @@ export const Port = observer(<T,>({ port, isOutput }: PortProps<T>) => {
           {port.connected && isPortTypeHovered && !visuallyDisabled ? (
             <span>x</span>
           ) : (
-            <span>{port.type.name.charAt(0)}</span>
+            <span>{"="}</span>
           )}
         </div>
         <span>{port.name}</span>

@@ -20,6 +20,7 @@ import {
 } from "./Node.styles";
 import { NodeActionProps, NodePortsProps, NodeProps } from "./Node.types";
 import { currentScale } from "../../../App";
+import { Pane } from "tweakpane";
 
 export const Node = observer(({ node, actions, window }: NodeProps) => {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -83,6 +84,22 @@ export const Node = observer(({ node, actions, window }: NodeProps) => {
   const active = store.selectedNodes?.indexOf(node) !== -1;
   const position = store.nodePositions.get(node.id) || { x: 0, y: 0 };
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const pane = new Pane({ container: containerRef.current });
+    const btn = pane.addButton({
+      title: "Add Node",
+    });
+
+    btn.on("click", () => {});
+
+    return () => {
+      pane.dispose();
+    };
+  }, []);
+
   return (
     <Draggable
       nodeRef={ref}
@@ -113,6 +130,16 @@ export const Node = observer(({ node, actions, window }: NodeProps) => {
         {window ? (
           <div css={nodeWindowWrapperStyles} children={window} />
         ) : undefined}
+        {/* <div
+          css={nodeContentWrapperStyles}
+          style={{
+            borderRadius: "0px",
+            paddingBottom: "0px",
+            paddingTop: "0px",
+          }}
+        >
+          <div ref={containerRef} style={{ minWidth: "80px" }} />
+        </div> */}
         <div css={nodeContentWrapperStyles}>
           <NodePorts ports={Object.values(node.inputs)} />
           <NodePorts
@@ -131,10 +158,12 @@ const NodeAction = ({ color = "#fff", onClick }: NodeActionProps) => {
 
 const NodePorts = ({ ports, isOutputWrapper }: NodePortsProps) => {
   return (
-    <div css={nodePortsWrapperStyles(isOutputWrapper)}>
-      {ports.map((port) => (
-        <Port key={port.id} port={port} isOutput={!!isOutputWrapper} />
-      ))}
+    <div style={{ minWidth: "80px", display: "flex", flexDirection: "column" }}>
+      <div css={nodePortsWrapperStyles(isOutputWrapper)}>
+        {ports.map((port) => (
+          <Port key={port.id} port={port} isOutput={!!isOutputWrapper} />
+        ))}
+      </div>
     </div>
   );
 };

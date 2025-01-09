@@ -79,7 +79,7 @@
   border-radius: 10px;
 }
  
-.node {
+/* .node {
   height: 150px;
   width: 150px;
   display: flex;
@@ -98,4 +98,4 @@
   mix-blend-mode: difference;
   color: white;
   font-weight: bold;
-}
+} */
