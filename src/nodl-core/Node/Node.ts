@@ -15,6 +15,11 @@ export abstract class Node<TData extends NodeData = NodeData> {
   public abstract inputs: Record<string, Input>;
   /** Node Outputs */
   public abstract outputs: Record<string, Output>;
+
+  public abstract code(args: string[]): {
+    code: string;
+    dependencies: string[];
+  };
   /** Arbitrary Data Store */
   public data: TData = {} as TData;
 

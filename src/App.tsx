@@ -8,7 +8,7 @@ import {
 import "./App.css";
 import { Experience } from "./components/Experience";
 import { Node } from "./nodl-core";
-import { MeshStandardMaterialNode } from "./nodes/MaterialNodes";
+import { MaterialNodes, MeshStandardMaterialNode } from "./nodes/MaterialNodes";
 import { Circuit, CircuitStore } from "./nodl-react";
 import { Pane } from "tweakpane";
 import {
@@ -31,6 +31,7 @@ import {
   Vec2Uniform,
   Vec3Uniform,
 } from "./nodes/UniformNodes";
+import { createVarNameForNode } from "./nodes/utils";
 
 export let currentScale = 1;
 
@@ -85,6 +86,7 @@ const VecUI = ({ node }: { node: Vec3 | Vec4 | Vec2 | Float | Int | Uint }) => {
           if (node.inputs[key]?.connected) return;
           node.inputs[key]?.next(() => e.value);
         });
+
       const sub = node.inputs[key].subscribe(() => {
         if (!node.inputs[key]?.connected) {
           binding!.disabled = false;
@@ -244,6 +246,14 @@ const TextureUniformUI = ({ node }: { node: TextureUniform }) => {
   );
 };
 
+type TreeNodeType = {
+  node: Node;
+  parents: TreeNodeType[];
+};
+type TreeType = {
+  [key: string]: TreeNodeType;
+};
+
 const MeshStandardMaterialUI = ({
   node,
 }: {
@@ -265,7 +275,110 @@ const MeshStandardMaterialUI = ({
 
   useEffect(() => {
     const sub3 = node.outputs.value.subscribe((value) => {
-      console.log(value, "BASE COLOR");
+      const nodesMap = new Map<string, Node>();
+
+      const outputToNodeMap = new Map<string, Node>();
+      const inputToNodeMap = new Map<string, Node>();
+
+      const nodes = store.nodes;
+
+      nodes.forEach((node) => {
+        nodesMap.set(node.id, node);
+        Object.values(node.outputs).forEach((output) => {
+          outputToNodeMap.set(output.id, node);
+        });
+        Object.values(node.inputs).forEach((input) => {
+          inputToNodeMap.set(input.id, node);
+        });
+      });
+
+      const tree: TreeType = {
+        [node.id]: {
+          node,
+          parents: [],
+        },
+      };
+
+      const pushNodeToTree = (currentNode: Node, parentNode: TreeNodeType) => {
+        const currentInputs = Object.values(currentNode.inputs);
+
+        currentInputs.map((currentInput) => {
+          const connection = currentInput.connection;
+
+          if (!connection) return;
+
+          const output = connection.from;
+          const node = outputToNodeMap.get(output.id);
+          if (!node) return;
+          const leaf = {
+            node,
+            parents: [],
+          };
+          parentNode.parents = [...parentNode.parents, leaf];
+
+          pushNodeToTree(node, leaf);
+        });
+      };
+
+      pushNodeToTree(node, tree[node.id]);
+
+      const traverseTree = (
+        rootNode: TreeNodeType,
+        cb: (child: TreeNodeType) => void
+      ) => {
+        cb(rootNode);
+        rootNode.parents.forEach((node) => {
+          traverseTree(node, cb);
+        });
+      };
+
+      const generatedCode: string[] = [];
+      const imports = new Set<string>();
+
+      traverseTree(tree[node.id], (child) => {
+        const node = child.node;
+
+        const inputs = Object.values(child.node.inputs);
+        const t = ["X", "Y", "Z", "W"];
+
+        let args: string[] = [];
+        for (let index = 0; index < inputs.length; index++) {
+          const input = inputs[index];
+          if (input.connection) {
+            const id = input.connection.from.id;
+            const node = outputToNodeMap.get(id);
+            if (node) {
+              const isSplitNode = node.name.includes("Split");
+              const varName = createVarNameForNode(node.id);
+              if (isSplitNode) {
+                if (!t[index]) throw new Error("not implemented");
+                args.push(`${varName}_${t[index]}`);
+                // return [`${varName}_${t[index]}`];
+              } else {
+                args.push(varName);
+              }
+            }
+          }
+        }
+        const code = node.code && node.code(args);
+        generatedCode.unshift(code.code);
+        code.dependencies.forEach((importName) => {
+          imports.add(importName);
+        });
+      });
+
+      const importsString = Array.from(imports).join(", ");
+      const importStatement = `import { ${importsString}, Fn } from "three/tsl";`;
+      const codeBlock = generatedCode.join("\n");
+      const fnString = `Fn(() => {
+        ${codeBlock}
+      })()`;
+
+      const code = `${importStatement}\n${fnString}`;
+
+      console.log(importStatement, "GENERATED CODE");
+      console.log(fnString, "GENERATED CODE");
+      navigator.clipboard.writeText(code);
 
       experienceRef.current?.defaultBox(value);
     });
@@ -290,11 +403,12 @@ const MeshStandardMaterialUI = ({
 const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max);
 };
+
 function App() {
   const nodeWindowResolver = useNodeWindowResolver();
 
   useLayoutEffect(() => {
-    store.setNodes([[new MeshStandardMaterialNode(), { x: 300, y: 0 }]]);
+    // store.setNodes([[new MeshStandardMaterialNode(), { x: 300, y: 0 }]]);
 
     return () => {
       store.dispose();
@@ -402,47 +516,6 @@ function App() {
     setContainerBound(rect);
   }, []);
 
-  const DraggableChip = ({
-    nodeName,
-    nodeType,
-  }: {
-    nodeName: string;
-    nodeType: string;
-  }) => {
-    return (
-      <div
-        draggable={true}
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", `${nodeName}-${nodeType}`);
-        }}
-        style={{
-          textAlign: "center",
-          padding: "10px",
-          backgroundColor: "var(--dark-background)",
-          cursor: "grab",
-          borderRadius: "12px",
-          margin: "5px 0px",
-        }}
-      >
-        <div>{nodeName}</div>
-      </div>
-    );
-  };
-
-  const ChipContainer = ({ children }: { children: React.ReactNode }) => {
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          flexWrap: "nowrap",
-        }}
-      >
-        {children}
-      </div>
-    );
-  };
-
   const pane = useRef<Pane>(null!);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -467,6 +540,17 @@ function App() {
         e.dataTransfer?.setData("text/plain", `${nodeName}-${nodeType}`);
       });
     };
+
+    const materialNodesFolder = pane.current.addFolder({
+      title: "Materials",
+    });
+
+    Object.keys(MaterialNodes).forEach((node) => {
+      const btn = materialNodesFolder.addButton({
+        title: node,
+      });
+      makeButtonsDraggable(btn.element, node, "MaterialNodes");
+    });
 
     const constantNodesFolder = pane.current.addFolder({
       title: "Constants",
@@ -538,42 +622,13 @@ function App() {
             left: 0,
             top: 0,
             backgroundColor: "var(--panel-background)",
-            border: "1px solid red",
-            // padding: "10px 20px",
             color: "var(--text-light-color)",
             fontFamily: `"Inter", sans-serif;`,
             overflow: "auto",
           }}
           ref={sidebarRef}
-        >
-          {/* drag and droppable Nodes */}
-          {/* <h1>Constants</h1>
-          <ChipContainer>
-            {Object.keys(ConstantNodes).map((nodeName) => (
-              <DraggableChip nodeName={nodeName} nodeType="ConstantNodes" />
-            ))}
-          </ChipContainer>
-          <h1>Math</h1>
-          <ChipContainer>
-            <div>
-              {Object.keys(MathNodes).map((nodeName) => (
-                <DraggableChip nodeType="MathNodes" nodeName={nodeName} />
-              ))}
-            </div>
-          </ChipContainer>
-          <h1>Attributes</h1>
-          <ChipContainer>
-            {Object.keys(AttributeNodes).map((nodeName) => (
-              <DraggableChip nodeType="AttributeNodes" nodeName={nodeName} />
-            ))}
-          </ChipContainer>
-          <h1>Uniforms</h1>
-          <ChipContainer>
-            {Object.keys(UniformNodes).map((nodeName) => (
-              <DraggableChip nodeType="UniformNodes" nodeName={nodeName} />
-            ))}
-          </ChipContainer> */}
-        </div>
+          className="sidebar-container"
+        />
 
         <div
           ref={circuitContainer}
@@ -592,12 +647,13 @@ function App() {
               MathNodes,
               AttributeNodes,
               UniformNodes,
+              MaterialNodes,
             };
 
             const [name, poolName] = e.dataTransfer
               .getData("text/plain")
               .split("-");
-            // const container = circuitContainer.current;
+
             const boundingRect = containerBound;
 
             const x = e.clientX - boundingRect.left;

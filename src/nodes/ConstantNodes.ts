@@ -2,11 +2,7 @@ import { Input, Output, schema, Node } from "../nodl-core";
 import { z } from "zod";
 import { vec2, vec3, vec4, float, int, uint, bool, color } from "three/tsl";
 import { combineLatest, map } from "rxjs";
-
-// const isNodeOfType = (nodeType: string) => (val: any) =>
-//   val &&
-//   typeof val.getSelf === "function" &&
-//   val.getSelf().nodeType === nodeType;
+import { createVarNameForNode } from "./utils";
 
 export class Float extends Node {
   name = "Float";
@@ -27,6 +23,18 @@ export class Float extends Node {
         })
       ),
     }),
+  };
+  public code = (args: string[]) => {
+    const argsString = !this.inputs.a.connected
+      ? `${this.inputs.a.getValue()()}`
+      : args.length > 0
+      ? args.join(", ")
+      : "";
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = float(${argsString})`,
+      dependencies: ["float"],
+    };
   };
 }
 
@@ -50,6 +58,18 @@ export class Int extends Node {
       ),
     }),
   };
+  public code = (args: string[]) => {
+    const argsString = !this.inputs.a.connected
+      ? `${this.inputs.a.getValue()()}`
+      : args.length > 0
+      ? args.join(", ")
+      : "";
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = int(${argsString})`,
+      dependencies: ["int"],
+    };
+  };
 }
 
 export class Uint extends Node {
@@ -72,6 +92,18 @@ export class Uint extends Node {
       ),
     }),
   };
+  public code = (args: string[]) => {
+    const argsString = !this.inputs.a.connected
+      ? `${this.inputs.a.getValue()()}`
+      : args.length > 0
+      ? args.join(", ")
+      : "";
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = uint(${argsString})`,
+      dependencies: ["uint"],
+    };
+  };
 }
 
 const Vec2Schema = schema(z.any());
@@ -87,11 +119,29 @@ export class Vec2 extends Node {
       type: Vec2Schema,
       observable: combineLatest([this.inputs.a, this.inputs.b]).pipe(
         map((inputs) => {
-          //   const;
           return () => vec2(...inputs.map((i) => i()));
         })
       ),
     }),
+  };
+  public code = (args: string[]) => {
+    let index = 0;
+    const argsString = Object.values(this.inputs)
+      .map((input) => {
+        if (!input.connected) {
+          const arg = args[index];
+          index++;
+          return arg;
+        }
+        return input.getValue()();
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = vec2(${argsString})`,
+      dependencies: ["vec2"],
+    };
   };
 }
 
@@ -125,6 +175,25 @@ export class Vec3 extends Node {
         })
       ),
     }),
+  };
+  code = (args: string[]) => {
+    let index = 0;
+    const argsString = Object.values(this.inputs)
+      .map((input) => {
+        if (!input.connected) {
+          const arg = args[index];
+          index++;
+          return arg;
+        }
+        return input.getValue()();
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = vec3(${argsString})`,
+      dependencies: ["vec3"],
+    };
   };
 }
 
@@ -164,6 +233,25 @@ export class Vec4 extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    let index = 0;
+    const argsString = Object.values(this.inputs)
+      .map((input) => {
+        if (input.connected) {
+          const arg = args[index];
+          index++;
+          return arg;
+        }
+        return input.getValue()();
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = vec4(${argsString})`,
+      dependencies: ["vec4"],
+    };
+  };
 }
 
 export class SplitVec2 extends Node {
@@ -190,6 +278,22 @@ export class SplitVec2 extends Node {
         map((inputs) => () => inputs[0]().y)
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const input = this.inputs.a.connected
+      ? {
+          x: `${args[0]}.x`,
+          y: `${args[0]}.y`,
+        }
+      : this.inputs.a.getValue()();
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+        const ${varName}_X = ${`${input.x}`}
+        const ${varName}_Y = ${`${input.y}`}
+      `,
+      dependencies: [],
+    };
   };
 }
 
@@ -225,6 +329,24 @@ export class SplitVec3 extends Node {
         map((inputs) => () => inputs[0]().z)
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const input = this.inputs.a.connected
+      ? {
+          x: `${args[0]}.x`,
+          y: `${args[0]}.y`,
+          z: `${args[0]}.z`,
+        }
+      : this.inputs.a.getValue()();
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+        const ${varName}_X = ${`${input.x}`}
+        const ${varName}_Y = ${`${input.y}`}
+        const ${varName}_Z = ${`${input.z}`}
+      `,
+      dependencies: [],
+    };
   };
 }
 
@@ -266,6 +388,26 @@ export class SplitVec4 extends Node {
         map((inputs) => () => inputs[0]().w)
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const input = this.inputs.a.connected
+      ? {
+          x: `${args[0]}.x`,
+          y: `${args[0]}.y`,
+          z: `${args[0]}.z`,
+          w: `${args[0]}.w`,
+        }
+      : this.inputs.a.getValue()();
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+        const ${varName}_X = ${`${input.x}`}
+        const ${varName}_Y = ${`${input.y}`}
+        const ${varName}_Z = ${`${input.z}`}
+        const ${varName}_W = ${`${input.w}`}
+      `,
+      dependencies: [],
+    };
   };
 }
 

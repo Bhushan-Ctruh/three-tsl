@@ -2,7 +2,8 @@ import { Output, schema, Node, Input } from "../nodl-core";
 import { z } from "zod";
 import { TextureLoader, Vector2, Vector3 } from "three";
 import { uniform, time, texture, uv } from "three/tsl";
-import { BehaviorSubject, combineLatest, map, of, switchMap } from "rxjs";
+import { BehaviorSubject, combineLatest, map, of } from "rxjs";
+import { createVarNameForNode } from "./utils";
 
 export class Vec2Uniform extends Node {
   name = "Vec2Uniform";
@@ -14,6 +15,15 @@ export class Vec2Uniform extends Node {
       type: schema(z.any()),
       observable: of(() => uniform(this._value)),
     }),
+  };
+  public code = () => {
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+      const ${varName}_uni = new THREE.Vector2(${this._value.x}, ${this._value.y});
+      const ${varName} = uniform(${varName}_uni)`,
+      dependencies: ["uniform"],
+    };
   };
 }
 
@@ -28,6 +38,15 @@ export class Vec3Uniform extends Node {
       observable: of(() => uniform(this._value)),
     }),
   };
+  public code = () => {
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+      const ${varName}_uni = new THREE.Vector3(${this._value.x}, ${this._value.y}, ${this._value.z});
+      const ${varName} = uniform(${varName}_uni)`,
+      dependencies: ["uniform"],
+    };
+  };
 }
 
 export class FloatUniform extends Node {
@@ -41,6 +60,15 @@ export class FloatUniform extends Node {
       observable: of(() => this._value),
     }),
   };
+  public code = () => {
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+      const ${varName} = uniform(0)
+      `,
+      dependencies: ["uniform"],
+    };
+  };
 }
 
 export class TimeUniform extends Node {
@@ -52,6 +80,15 @@ export class TimeUniform extends Node {
       type: schema(z.any()),
       observable: of(() => time),
     }),
+  };
+  public code = () => {
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+      const ${varName} = time
+      `,
+      dependencies: ["time"],
+    };
   };
 }
 
@@ -81,17 +118,27 @@ export class TextureUniform extends Node {
           (inputs) => () => texture(textureLoader.load(inputs[0]), inputs[1]())
         )
       ),
-      //   observable: this._value.pipe(
-      //     switchMap((newValue) => {
-      //       return of(() => texture(textureLoader.load(newValue), uv()));
-      //     })
-      //   ),
     }),
   };
 
   setTexture(texture: string) {
     this._value.next(texture);
   }
+
+  public code = (args?: string[]) => {
+    const argsString = args ? args.join(", ") : null;
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `
+      ${this.inputs.uvs.connected ? "" : `const ${varName}_uv = uv()`}
+      const ${varName}_texture = textureLoader.load("${this._value.value}")
+      const ${varName} = texture(${varName}_texture, ${
+        !this.inputs.uvs.connected ? `${varName}_uv` : argsString
+      })
+      `,
+      dependencies: ["texture", "uv"],
+    };
+  };
 }
 
 export const UniformNodes = {

@@ -93,8 +93,6 @@ export class CircuitStore {
 
   /** Sets an Output as the current draft connection source */
   public commitDraftConnection<T>(target: Input<T>): Connection<T> | void {
-    console.log(target, "TARGET");
-
     if (this.draftConnectionSource) {
       const connection = this.draftConnectionSource.connect(target);
 

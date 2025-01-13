@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { uv } from "three/tsl";
 import { of } from "rxjs";
+import { createVarNameForNode } from "./utils";
 
 const UVSchema = schema(z.any());
 
@@ -15,6 +16,13 @@ export class UV extends Node {
       type: UVSchema,
       observable: of(uv),
     }),
+  };
+  public code = () => {
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = uv()`,
+      dependencies: ["uv"],
+    };
   };
 }
 

@@ -69,6 +69,7 @@ export const nodeActionStyles = (color: string) => css`
   height: 8px;
   border-radius: 6px;
   background-color: ${color};
+  cursor: pointer;
 
   &:hover {
     opacity: 0.4;

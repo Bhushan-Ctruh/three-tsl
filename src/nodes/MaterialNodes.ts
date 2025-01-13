@@ -20,9 +20,21 @@ export class MeshStandardMaterialNode extends Node {
       type: BaseColorSchema,
       observable: combineLatest([this.inputs.a]).pipe(
         map((inputs) => {
-          return Fn(() => inputs[0]());
+          const i = inputs[0]();
+          return Fn(() => i);
         })
       ),
     }),
   };
+  public code = (args: string[]) => {
+    const argsString = !this.inputs.a.connected
+      ? `vec4(1, 0, 0, 1)`
+      : args.join(", ");
+    return {
+      code: `return ${argsString}`,
+      dependencies: ["vec4"],
+    };
+  };
 }
+
+export const MaterialNodes = { MeshStandardMaterialNode };

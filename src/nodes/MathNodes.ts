@@ -5,18 +5,9 @@ import {
   mul,
   sub,
   div,
-  mod,
-  modInt,
-  equal,
-  lessThan,
-  greaterThan,
-  lessThanEqual,
-  greaterThanEqual,
   abs,
-  vec2,
   acos,
   asin,
-  atan,
   atan2,
   clamp,
   ceil,
@@ -31,64 +22,7 @@ import {
   log,
 } from "three/tsl";
 import { combineLatest, map } from "rxjs";
-// const a = abs(vec2(1, 2), vec2(1, 2), vec2(1, 2), vec2(1, 1));
-// console.log(a.getSelf());
-
-// abs( x )	Return the absolute value of the parameter.
-// acos( x )	Return the arccosine of the parameter.
-// all( x )	Return true if all components of x are true.
-// any( x )	Return true if any component of x is true.
-// asin( x )	Return the arcsine of the parameter.
-// atan( y, x )	Return the arc-tangent of the parameters.
-// bitcast( x, y )	Reinterpret the bits of a value as a different type.
-// cbrt( x )	Return the cube root of the parameter.
-// ceil( x )	Find the nearest integer that is greater than or equal to the parameter.
-// clamp( x, min, max )	Constrain a value to lie between two further values.
-// cos( x )	Return the cosine of the parameter.
-// cross( x, y )	Calculate the cross product of two vectors.
-// dFdx( p )	Return the partial derivative of an argument with respect to x.
-// dFdy( p )	Return the partial derivative of an argument with respect to y.
-// degrees( radians )	Convert a quantity in radians to degrees.
-// difference( x, y )	Calculate the absolute difference between two values.
-// distance( x, y )	Calculate the distance between two points.
-// dot( x, y )	Calculate the dot product of two vectors.
-// equals( x, y )	Return true if x equals y.
-// exp( x )	Return the natural exponentiation of the parameter.
-// exp2( x )	Return 2 raised to the power of the parameter.
-// faceforward( N, I, Nref )	Return a vector pointing in the same direction as another.
-// floor( x )	Find the nearest integer less than or equal to the parameter.
-// fract( x )	Compute the fractional part of the argument.
-// fwidth( x )	Return the sum of the absolute derivatives in x and y.
-// inverseSqrt( x )	Return the inverse of the square root of the parameter.
-// invert( x )	Invert an alpha parameter ( 1. - x ).
-// length( x )	Calculate the length of a vector.
-// lengthSq( x )	Calculate the squared length of a vector.
-// log( x )	Return the natural logarithm of the parameter.
-// log2( x )	Return the base 2 logarithm of the parameter.
-// max( x, y )	Return the greater of two values.
-// min( x, y )	Return the lesser of two values.
-// mix( x, y, a )	Linearly interpolate between two values.
-// negate( x )	Negate the value of the parameter ( -x ).
-// normalize( x )	Calculate the unit vector in the same direction as the original vector.
-// oneMinus( x )	Return 1 minus the parameter.
-// pow( x, y )	Return the value of the first parameter raised to the power of the second.
-// pow2( x )	Return the square of the parameter.
-// pow3( x )	Return the cube of the parameter.
-// pow4( x )	Return the fourth power of the parameter.
-// radians( degrees )	Convert a quantity in degrees to radians.
-// reciprocal( x )	Return the reciprocal of the parameter (1/x).
-// reflect( I, N )	Calculate the reflection direction for an incident vector.
-// refract( I, N, eta )	Calculate the refraction direction for an incident vector.
-// round( x )	Round the parameter to the nearest integer.
-// saturate( x )	Constrain a value between 0 and 1.
-// sign( x )	Extract the sign of the parameter.
-// sin( x )	Return the sine of the parameter.
-// smoothstep( e0, e1, x )	Perform Hermite interpolation between two values.
-// sqrt( x )	Return the square root of the parameter.
-// step( edge, x )	Generate a step function by comparing two values.
-// tan( x )	Return the tangent of the parameter.
-// transformDirection( dir, matrix )	Transform the direction of a vector by a matrix and then normalize the result.
-// trunc( x )
+import { createVarNameForNode } from "./utils";
 
 const AddInputSchema = schema(z.any());
 
@@ -119,34 +53,48 @@ export class Add extends Node {
     }),
   };
 
-  addInputPort = () => {
-    const inputIndex = Object.keys(this.inputs).length;
-    this.inputs = {
-      ...this.inputs,
-      [`input${inputIndex}`]: new Input({
-        name: `Input${inputIndex}`,
-        type: schema(z.any()),
-        defaultValue: () => 0,
-      }),
-    };
-
-    const inputs = Object.values(this.inputs);
-    const newObservable = combineLatest(inputs).pipe(
-      map((inputs) => {
-        return () => add(...inputs.map((i) => i()));
+  public code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? "0" : args[i];
       })
-    );
-
-    this.outputs.output.updateObservable(newObservable);
-
-    this.onUpdate();
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = add(${argsString})`,
+      dependencies: ["add"],
+    };
   };
 
-  onUpdate = () => {};
+  // addInputPort = () => {
+  //   const inputIndex = Object.keys(this.inputs).length;
+  //   this.inputs = {
+  //     ...this.inputs,
+  //     [`input${inputIndex}`]: new Input({
+  //       name: `Input${inputIndex}`,
+  //       type: schema(z.any()),
+  //       defaultValue: () => 0,
+  //     }),
+  //   };
 
-  addOnUpdate = (fn: () => void) => {
-    this.onUpdate = fn;
-  };
+  //   const inputs = Object.values(this.inputs);
+  //   const newObservable = combineLatest(inputs).pipe(
+  //     map((inputs) => {
+  //       return () => add(...inputs.map((i) => i()));
+  //     })
+  //   );
+
+  //   this.outputs.output.updateObservable(newObservable);
+
+  //   this.onUpdate();
+  // };
+
+  // onUpdate = () => {};
+
+  // addOnUpdate = (fn: () => void) => {
+  //   this.onUpdate = fn;
+  // };
 }
 
 export class Mul extends Node {
@@ -173,6 +121,19 @@ export class Mul extends Node {
         })
       ),
     }),
+  };
+  public code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = mul(${argsString})`,
+      dependencies: ["mul"],
+    };
   };
 }
 
@@ -201,6 +162,19 @@ export class Sub extends Node {
       ),
     }),
   };
+  public code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = sub(${argsString})`,
+      dependencies: ["sub"],
+    };
+  };
 }
 
 export class Div extends Node {
@@ -209,12 +183,12 @@ export class Div extends Node {
     a: new Input({
       name: "Value",
       type: schema(z.any()),
-      defaultValue: () => 0,
+      defaultValue: () => 1,
     }),
     b: new Input({
       name: "Value2",
       type: schema(z.any()),
-      defaultValue: () => 0,
+      defaultValue: () => 1,
     }),
   };
   outputs = {
@@ -228,63 +202,20 @@ export class Div extends Node {
       ),
     }),
   };
+  public code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = div(${argsString})`,
+      dependencies: ["div"],
+    };
+  };
 }
-
-// abs( x )	Return the absolute value of the parameter.
-// acos( x )	Return the arccosine of the parameter.
-// all( x )	Return true if all components of x are true.
-// any( x )	Return true if any component of x is true.
-// asin( x )	Return the arcsine of the parameter.
-// atan( y, x )	Return the arc-tangent of the parameters.
-// bitcast( x, y )	Reinterpret the bits of a value as a different type.
-// cbrt( x )	Return the cube root of the parameter.
-// ceil( x )	Find the nearest integer that is greater than or equal to the parameter.
-// clamp( x, min, max )	Constrain a value to lie between two further values.
-// cos( x )	Return the cosine of the parameter.
-// cross( x, y )	Calculate the cross product of two vectors.
-// dFdx( p )	Return the partial derivative of an argument with respect to x.
-// dFdy( p )	Return the partial derivative of an argument with respect to y.
-// degrees( radians )	Convert a quantity in radians to degrees.
-// difference( x, y )	Calculate the absolute difference between two values.
-// distance( x, y )	Calculate the distance between two points.
-// dot( x, y )	Calculate the dot product of two vectors.
-// equals( x, y )	Return true if x equals y.
-// exp( x )	Return the natural exponentiation of the parameter.
-// exp2( x )	Return 2 raised to the power of the parameter.
-// faceforward( N, I, Nref )	Return a vector pointing in the same direction as another.
-// floor( x )	Find the nearest integer less than or equal to the parameter.
-// fract( x )	Compute the fractional part of the argument.
-// fwidth( x )	Return the sum of the absolute derivatives in x and y.
-// inverseSqrt( x )	Return the inverse of the square root of the parameter.
-// invert( x )	Invert an alpha parameter ( 1. - x ).
-// length( x )	Calculate the length of a vector.
-// lengthSq( x )	Calculate the squared length of a vector.
-// log( x )	Return the natural logarithm of the parameter.
-// log2( x )	Return the base 2 logarithm of the parameter.
-// max( x, y )	Return the greater of two values.
-// min( x, y )	Return the lesser of two values.
-// mix( x, y, a )	Linearly interpolate between two values.
-// negate( x )	Negate the value of the parameter ( -x ).
-// normalize( x )	Calculate the unit vector in the same direction as the original vector.
-// oneMinus( x )	Return 1 minus the parameter.
-// pow( x, y )	Return the value of the first parameter raised to the power of the second.
-// pow2( x )	Return the square of the parameter.
-// pow3( x )	Return the cube of the parameter.
-// pow4( x )	Return the fourth power of the parameter.
-// radians( degrees )	Convert a quantity in degrees to radians.
-// reciprocal( x )	Return the reciprocal of the parameter (1/x).
-// reflect( I, N )	Calculate the reflection direction for an incident vector.
-// refract( I, N, eta )	Calculate the refraction direction for an incident vector.
-// round( x )	Round the parameter to the nearest integer.
-// saturate( x )	Constrain a value between 0 and 1.
-// sign( x )	Extract the sign of the parameter.
-// sin( x )	Return the sine of the parameter.
-// smoothstep( e0, e1, x )	Perform Hermite interpolation between two values.
-// sqrt( x )	Return the square root of the parameter.
-// step( edge, x )	Generate a step function by comparing two values.
-// tan( x )	Return the tangent of the parameter.
-// transformDirection( dir, matrix )	Transform the direction of a vector by a matrix and then normalize the result.
-// trunc( x )
 
 //create Nodes for above functions
 export class Abs extends Node {
@@ -306,6 +237,19 @@ export class Abs extends Node {
         })
       ),
     }),
+  };
+  public code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = abs(${argsString})`,
+      dependencies: ["abs"],
+    };
   };
 }
 // Helper function to evaluate inputs
@@ -331,6 +275,19 @@ export class Acos extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = acos(${argsString})`,
+      dependencies: ["acos"],
+    };
+  };
 }
 
 export class Asin extends Node {
@@ -350,6 +307,19 @@ export class Asin extends Node {
         map((inputs) => evaluateInputs(inputs, asin))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = asin(${argsString})`,
+      dependencies: ["asin"],
+    };
   };
 }
 
@@ -375,6 +345,19 @@ export class Atan extends Node {
         map((inputs) => evaluateInputs(inputs, atan2))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = atan2(${argsString})`,
+      dependencies: ["atan2"],
+    };
   };
 }
 
@@ -406,6 +389,19 @@ export class Clamp extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = clamp(${argsString})`,
+      dependencies: ["clamp"],
+    };
+  };
 }
 
 export class Ceil extends Node {
@@ -427,6 +423,19 @@ export class Ceil extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = ceil(${argsString})`,
+      dependencies: ["ceil"],
+    };
+  };
 }
 
 export class Cos extends Node {
@@ -446,6 +455,19 @@ export class Cos extends Node {
         map((inputs) => evaluateInputs(inputs, cos))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = cos(${argsString})`,
+      dependencies: ["cos"],
+    };
   };
 }
 
@@ -472,6 +494,19 @@ export class Cross extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = cross(${argsString})`,
+      dependencies: ["cross"],
+    };
+  };
 }
 
 export class Degrees extends Node {
@@ -492,6 +527,19 @@ export class Degrees extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = degrees(${argsString})`,
+      dependencies: ["degrees"],
+    };
+  };
 }
 
 export class Distance extends Node {
@@ -500,12 +548,12 @@ export class Distance extends Node {
     x: new Input({
       name: "Point A",
       type: schema(z.any()),
-      defaultValue: () => [0, 0, 0],
+      defaultValue: () => 0,
     }),
     y: new Input({
       name: "Point B",
       type: schema(z.any()),
-      defaultValue: () => [0, 0, 0],
+      defaultValue: () => 0,
     }),
   };
   outputs = {
@@ -516,6 +564,19 @@ export class Distance extends Node {
         map((inputs) => evaluateInputs(inputs, distance))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = distance(${argsString})`,
+      dependencies: ["distance"],
+    };
   };
 }
 
@@ -542,6 +603,19 @@ export class Dot extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = dot(${argsString})`,
+      dependencies: ["dot"],
+    };
+  };
 }
 
 export class Floor extends Node {
@@ -561,6 +635,19 @@ export class Floor extends Node {
         map((inputs) => evaluateInputs(inputs, floor))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = floor(${argsString})`,
+      dependencies: ["floor"],
+    };
   };
 }
 
@@ -582,6 +669,19 @@ export class Fract extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = fract(${argsString})`,
+      dependencies: ["fract"],
+    };
+  };
 }
 
 export class Length extends Node {
@@ -590,7 +690,7 @@ export class Length extends Node {
     a: new Input({
       name: "Vector",
       type: schema(z.any()),
-      defaultValue: () => [0, 0, 0],
+      defaultValue: () => 0,
     }),
   };
   outputs = {
@@ -601,6 +701,19 @@ export class Length extends Node {
         map((inputs) => evaluateInputs(inputs, length))
       ),
     }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = length(${argsString})`,
+      dependencies: ["length"],
+    };
   };
 }
 
@@ -622,6 +735,19 @@ export class Log extends Node {
       ),
     }),
   };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? `0` : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this.id);
+    return {
+      code: `const ${varName} = log(${argsString})`,
+      dependencies: ["log"],
+    };
+  };
 }
 
 export const MathNodes = {
@@ -630,9 +756,6 @@ export const MathNodes = {
   Sub,
   Div,
   Abs,
-  // Acos,
-  // Asin,
-  // Atan,
   Clamp,
   Ceil,
   Cos,
