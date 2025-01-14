@@ -17,7 +17,7 @@ export class Vec2Uniform extends Node {
     }),
   };
   public code = () => {
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
       const ${varName}_uni = new THREE.Vector2(${this._value.x}, ${this._value.y});
@@ -39,7 +39,7 @@ export class Vec3Uniform extends Node {
     }),
   };
   public code = () => {
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
       const ${varName}_uni = new THREE.Vector3(${this._value.x}, ${this._value.y}, ${this._value.z});
@@ -61,7 +61,7 @@ export class FloatUniform extends Node {
     }),
   };
   public code = () => {
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
       const ${varName} = uniform(0)
@@ -82,7 +82,7 @@ export class TimeUniform extends Node {
     }),
   };
   public code = () => {
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
       const ${varName} = time
@@ -127,7 +127,7 @@ export class TextureUniform extends Node {
 
   public code = (args?: string[]) => {
     const argsString = args ? args.join(", ") : null;
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
       ${this.inputs.uvs.connected ? "" : `const ${varName}_uv = uv()`}

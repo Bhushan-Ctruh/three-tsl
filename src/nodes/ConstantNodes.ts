@@ -30,7 +30,7 @@ export class Float extends Node {
       : args.length > 0
       ? args.join(", ")
       : "";
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = float(${argsString})`,
       dependencies: ["float"],
@@ -64,7 +64,7 @@ export class Int extends Node {
       : args.length > 0
       ? args.join(", ")
       : "";
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = int(${argsString})`,
       dependencies: ["int"],
@@ -98,7 +98,7 @@ export class Uint extends Node {
       : args.length > 0
       ? args.join(", ")
       : "";
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = uint(${argsString})`,
       dependencies: ["uint"],
@@ -126,18 +126,22 @@ export class Vec2 extends Node {
   };
   public code = (args: string[]) => {
     let index = 0;
+    console.log(args);
+
     const argsString = Object.values(this.inputs)
       .map((input) => {
-        if (!input.connected) {
+        console.log(input.name, input.connected);
+
+        if (input.connected) {
           const arg = args[index];
           index++;
           return arg;
         }
-        return input.getValue()();
+        return `${input.getValue()()}`;
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = vec2(${argsString})`,
       dependencies: ["vec2"],
@@ -180,7 +184,7 @@ export class Vec3 extends Node {
     let index = 0;
     const argsString = Object.values(this.inputs)
       .map((input) => {
-        if (!input.connected) {
+        if (input.connected) {
           const arg = args[index];
           index++;
           return arg;
@@ -189,7 +193,7 @@ export class Vec3 extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = vec3(${argsString})`,
       dependencies: ["vec3"],
@@ -246,7 +250,7 @@ export class Vec4 extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = vec4(${argsString})`,
       dependencies: ["vec4"],
@@ -286,7 +290,7 @@ export class SplitVec2 extends Node {
           y: `${args[0]}.y`,
         }
       : this.inputs.a.getValue()();
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
         const ${varName}_X = ${`${input.x}`}
@@ -338,7 +342,7 @@ export class SplitVec3 extends Node {
           z: `${args[0]}.z`,
         }
       : this.inputs.a.getValue()();
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
         const ${varName}_X = ${`${input.x}`}
@@ -398,7 +402,7 @@ export class SplitVec4 extends Node {
           w: `${args[0]}.w`,
         }
       : this.inputs.a.getValue()();
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `
         const ${varName}_X = ${`${input.x}`}

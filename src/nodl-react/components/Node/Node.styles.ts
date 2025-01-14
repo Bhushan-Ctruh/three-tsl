@@ -76,6 +76,28 @@ export const nodeActionStyles = (color: string) => css`
   }
 `;
 
+// backgroundColor: transparent,
+//               border: "none",
+//               outline: "none",
+//               color: "var(--color-text-primary)",
+//               letterSpacing: "0.1em",
+//               fontFamily: "Inter", sans-serif`,
+//               fontSize: "var(--font-size-xs)",`
+
+export const varInputStyles = css`
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  letter-spacing: 0.1em;
+  font-family: "Inter", sans-serif;
+  font-size: var(--font-size-xs);
+  margin-top: 0.1em;
+  padding: 0em 0.1em;
+  &:focus {
+    border-bottom: 1px solid var(--text-neutral-color);
+  }
+`;
 export const nodeWindowWrapperStyles = css`
   position: relative;
   display: flex;

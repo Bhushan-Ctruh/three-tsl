@@ -32,6 +32,10 @@ import {
   Vec3Uniform,
 } from "./nodes/UniformNodes";
 import { createVarNameForNode } from "./nodes/utils";
+import hljs from "highlight.js/lib/core";
+import javascript from "highlight.js/lib/languages/javascript";
+import "highlight.js/styles/atom-one-dark.css";
+hljs.registerLanguage("javascript", javascript);
 
 export let currentScale = 1;
 
@@ -268,13 +272,35 @@ const MeshStandardMaterialUI = ({
     const boundBox = canvasRef.current.getBoundingClientRect();
 
     experienceRef.current = new Experience(canvasRef.current, {
-      width: boundBox.width,
-      height: boundBox.height,
+      width: boundBox.width * (1 / currentScale),
+      height: boundBox.height * (1 / currentScale),
     });
   }, []);
 
   useEffect(() => {
     const sub3 = node.outputs.value.subscribe((value) => {
+      experienceRef.current?.defaultBox(value);
+    });
+
+    return () => {
+      sub3.unsubscribe();
+    };
+  }, []);
+
+  const btnContainer = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!btnContainer.current) return;
+    const pane = new Pane({ container: btnContainer.current, expanded: true });
+    const btn = pane.addButton({
+      title: `Copy Code`,
+    });
+
+    let timeoutId: number;
+
+    btn.on("click", () => {
+      timeoutId && clearTimeout(timeoutId);
+      btn.title = "Copying...";
       const nodesMap = new Map<string, Node>();
 
       const outputToNodeMap = new Map<string, Node>();
@@ -349,11 +375,10 @@ const MeshStandardMaterialUI = ({
             const node = outputToNodeMap.get(id);
             if (node) {
               const isSplitNode = node.name.includes("Split");
-              const varName = createVarNameForNode(node.id);
+              const varName = createVarNameForNode(node);
               if (isSplitNode) {
                 if (!t[index]) throw new Error("not implemented");
                 args.push(`${varName}_${t[index]}`);
-                // return [`${varName}_${t[index]}`];
               } else {
                 args.push(varName);
               }
@@ -361,7 +386,7 @@ const MeshStandardMaterialUI = ({
           }
         }
         const code = node.code && node.code(args);
-        generatedCode.unshift(code.code);
+        generatedCode.unshift(code.code.trim());
         code.dependencies.forEach((importName) => {
           imports.add(importName);
         });
@@ -369,34 +394,39 @@ const MeshStandardMaterialUI = ({
 
       const importsString = Array.from(imports).join(", ");
       const importStatement = `import { ${importsString}, Fn } from "three/tsl";`;
-      const codeBlock = generatedCode.join("\n");
+      //remove duplicates
+      const uniqueStatements = [...new Set(generatedCode)].join("\n");
+      // const codeBlock = generatedCode.join("\n");
       const fnString = `Fn(() => {
-        ${codeBlock}
+        ${uniqueStatements}
       })()`;
 
       const code = `${importStatement}\n${fnString}`;
 
-      console.log(importStatement, "GENERATED CODE");
-      console.log(fnString, "GENERATED CODE");
       navigator.clipboard.writeText(code);
-
-      experienceRef.current?.defaultBox(value);
+      btn.title = "Copied to Clipboard";
+      timeoutId = setTimeout(() => {
+        btn.title = "Copy Code";
+      }, 1000);
     });
-
     return () => {
-      sub3.unsubscribe();
+      timeoutId && clearTimeout(timeoutId);
+      pane.dispose();
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        width: "100%",
-        height: "300px",
-        backgroundColor: "var(--node-background)",
-      }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "300px",
+          backgroundColor: "var(--node-background)",
+        }}
+      />
+      <div ref={btnContainer}></div>
+    </>
   );
 };
 
@@ -600,6 +630,28 @@ function App() {
       pane.current.dispose();
     };
   }, []);
+
+  // const codeBlockRef = useRef<HTMLDivElement>(null);
+
+  // useEffect(() => {
+  //   if (!codeBlockRef.current) return;
+  //   codeBlockRef.current.childNodes.forEach((child) => {
+  //     if (child instanceof HTMLElement) {
+  //       hljs.highlightElement(child);
+  //     }
+  //   });
+  //   // hljs.highlightElement(codeBlockRef.current);
+  // }, [hljs]);
+
+  // // const codeBlocks = [
+  // //   `const {(texture, uniform, vec2, vec4, uv, oscSine, time, grayscale)} =
+  // //   await import( 'three/tsl' );`,
+  // //   `const samplerTexture = new
+  // //   THREE.TextureLoader().load( './textures/uv_grid_opengl.jpg' );`,
+  // //   `samplerTexture.wrapS = THREE.RepeatWrapping; samplerTexture.colorSpace =
+  // //   THREE.SRGBColorSpace; `,
+  // //   `const scaledTime = time.mul( .5 ); // .5 is speed`,
+  // // ];
 
   return (
     <>

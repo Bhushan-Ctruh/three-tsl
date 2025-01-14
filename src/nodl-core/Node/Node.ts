@@ -16,6 +16,8 @@ export abstract class Node<TData extends NodeData = NodeData> {
   /** Node Outputs */
   public abstract outputs: Record<string, Output>;
 
+  public localName: null | string = null;
+
   public abstract code(args: string[]): {
     code: string;
     dependencies: string[];

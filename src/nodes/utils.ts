@@ -40,8 +40,13 @@ import {
   time,
   texture,
 } from "three/tsl";
+import { Node } from "../nodl-core";
 
-export const createVarNameForNode = (nodeId: string) => {
+export const createVarNameForNode = (node: Node) => {
+  if (node.localName && node.localName.length > 0) {
+    return node.localName;
+  }
+  const nodeId = node.id;
   const lastFourChars = nodeId.slice(-4).replace("-", "");
   return `node_${lastFourChars}`;
 };

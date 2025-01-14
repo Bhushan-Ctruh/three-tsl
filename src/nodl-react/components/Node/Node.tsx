@@ -17,23 +17,135 @@ import {
   nodeActionStyles,
   nodeHeaderNameWrapperStyle,
   nodeWindowWrapperStyles,
+  varInputStyles,
 } from "./Node.styles";
 import { NodeActionProps, NodePortsProps, NodeProps } from "./Node.types";
 import { currentScale } from "../../../App";
 import { Pane } from "tweakpane";
+import { Node as NodeImpl } from "../../../nodl-core";
+
+const NodeName = ({ node }: { node: NodeImpl }) => {
+  const [editLocalName, setEditLocalName] = React.useState({
+    name: node.localName,
+    edit: false,
+  });
+  const inputRef = React.useRef<HTMLInputElement>(null!);
+
+  React.useEffect(() => {
+    if (!inputRef.current) return;
+
+    const setName = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setEditLocalName((prev) => {
+          return { ...prev, edit: false };
+        });
+        return;
+      }
+      if (e.key !== "Enter") {
+        return;
+      }
+
+      const varName = inputRef.current.value.trim();
+      if (varName.length > 0) {
+        node.localName = varName;
+      }
+      setEditLocalName(() => {
+        return {
+          name: node.localName,
+          edit: false,
+        };
+      });
+    };
+
+    inputRef.current.addEventListener("keypress", setName);
+
+    return () => {
+      inputRef.current?.removeEventListener("keypress", setName);
+    };
+  }, [editLocalName]);
+
+  return (
+    <>
+      {editLocalName.edit ? (
+        <span>
+          <input
+            ref={(ref) => {
+              inputRef.current = ref!;
+              ref?.focus();
+            }}
+            css={varInputStyles}
+            defaultValue={node.localName || ""}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+            }}
+            onFocus={(e) => {
+              e.stopPropagation();
+            }}
+            onBlur={() => {
+              const varName = inputRef.current.value.trim();
+              if (varName.length > 0) {
+                node.localName = varName;
+              }
+
+              setEditLocalName(() => {
+                return {
+                  name: node.localName,
+                  edit: false,
+                };
+              });
+            }}
+          />
+        </span>
+      ) : (
+        <span
+          onDoubleClick={() =>
+            setEditLocalName((prev) => {
+              return {
+                ...prev,
+                edit: true,
+              };
+            })
+          }
+          style={{
+            cursor: "pointer",
+            color: "var(--text-neutral-color)",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <span>{"("}</span>
+          <span
+            style={{
+              maxWidth: "150px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "inline-block",
+            }}
+          >
+            {node.localName || "Db Click to set name"}
+          </span>
+          <span>{")"}</span>
+        </span>
+      )}
+    </>
+  );
+};
 
 export const Node = observer(({ node, actions, window }: NodeProps) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const { onMouseEnter, onMouseLeave, isHovered } = useHover();
   const { store } = React.useContext(StoreContext);
 
-  const [_, setRefresh] = React.useState(0);
+  // const [_, setRefresh] = React.useState(0);
 
   React.useEffect(() => {
     if (ref.current) {
       store.setNodeElement(node.id, ref.current);
 
-      node.addOnUpdate && node.addOnUpdate(() => setRefresh((r) => r + 1));
+      // node.addOnUpdate && node.addOnUpdate(() => setRefresh((r) => r + 1));
 
       return () => {
         store.removeNodeElement(node.id);
@@ -121,7 +233,15 @@ export const Node = observer(({ node, actions, window }: NodeProps) => {
       >
         <div css={nodeHeaderWrapperStyles(active)} className={"handle"}>
           <div css={nodeHeaderNameWrapperStyle}>
-            <span>{node.name}</span>
+            <span
+              style={{
+                lineHeight: 1.4,
+              }}
+            >
+              {node.name}
+              <br />
+              <NodeName node={node} />
+            </span>
           </div>
           <div css={nodeHeaderActionsStyles(isHovered || active)}>
             <NodeAction color="#ff4444" onClick={handleRemoveNode} />

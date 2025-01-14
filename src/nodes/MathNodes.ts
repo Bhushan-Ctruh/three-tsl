@@ -20,6 +20,8 @@ import {
   fract,
   length,
   log,
+  sin,
+  mod,
 } from "three/tsl";
 import { combineLatest, map } from "rxjs";
 import { createVarNameForNode } from "./utils";
@@ -60,7 +62,7 @@ export class Add extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = add(${argsString})`,
       dependencies: ["add"],
@@ -129,7 +131,7 @@ export class Mul extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = mul(${argsString})`,
       dependencies: ["mul"],
@@ -169,7 +171,7 @@ export class Sub extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = sub(${argsString})`,
       dependencies: ["sub"],
@@ -209,7 +211,7 @@ export class Div extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = div(${argsString})`,
       dependencies: ["div"],
@@ -245,7 +247,7 @@ export class Abs extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = abs(${argsString})`,
       dependencies: ["abs"],
@@ -282,7 +284,7 @@ export class Acos extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = acos(${argsString})`,
       dependencies: ["acos"],
@@ -315,7 +317,7 @@ export class Asin extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = asin(${argsString})`,
       dependencies: ["asin"],
@@ -353,7 +355,7 @@ export class Atan extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = atan2(${argsString})`,
       dependencies: ["atan2"],
@@ -396,7 +398,7 @@ export class Clamp extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = clamp(${argsString})`,
       dependencies: ["clamp"],
@@ -430,7 +432,7 @@ export class Ceil extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = ceil(${argsString})`,
       dependencies: ["ceil"],
@@ -463,10 +465,43 @@ export class Cos extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = cos(${argsString})`,
       dependencies: ["cos"],
+    };
+  };
+}
+
+export class Sin extends Node {
+  name = "sin";
+  inputs = {
+    a: new Input({
+      name: "Value",
+      type: schema(z.any()),
+      defaultValue: () => 0,
+    }),
+  };
+  outputs = {
+    output: new Output({
+      name: "Output",
+      type: schema(z.any()),
+      observable: combineLatest([...Object.values(this.inputs)]).pipe(
+        map((inputs) => evaluateInputs(inputs, sin))
+      ),
+    }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? 0 : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this);
+    return {
+      code: `const ${varName} = sin(${argsString})`,
+      dependencies: ["sin"],
     };
   };
 }
@@ -501,10 +536,48 @@ export class Cross extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = cross(${argsString})`,
       dependencies: ["cross"],
+    };
+  };
+}
+
+export class Mod extends Node {
+  name = "mod";
+  inputs = {
+    x: new Input({
+      name: "Vector A",
+      type: schema(z.any()),
+      defaultValue: () => 0,
+    }),
+    y: new Input({
+      name: "Vector B",
+      type: schema(z.any()),
+      defaultValue: () => 0,
+    }),
+  };
+  outputs = {
+    output: new Output({
+      name: "Output",
+      type: schema(z.any()),
+      observable: combineLatest([...Object.values(this.inputs)]).pipe(
+        map((inputs) => evaluateInputs(inputs, mod))
+      ),
+    }),
+  };
+  code = (args: string[]) => {
+    const argsString = Object.values(this.inputs)
+      .map((input, i) => {
+        return !input.connected ? "0" : args[i];
+      })
+      .filter((arg) => arg !== undefined && arg !== null)
+      .join(", ");
+    const varName = createVarNameForNode(this);
+    return {
+      code: `const ${varName} = mod(${argsString})`,
+      dependencies: ["mod"],
     };
   };
 }
@@ -534,7 +607,7 @@ export class Degrees extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = degrees(${argsString})`,
       dependencies: ["degrees"],
@@ -572,7 +645,7 @@ export class Distance extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = distance(${argsString})`,
       dependencies: ["distance"],
@@ -610,7 +683,7 @@ export class Dot extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = dot(${argsString})`,
       dependencies: ["dot"],
@@ -643,7 +716,7 @@ export class Floor extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = floor(${argsString})`,
       dependencies: ["floor"],
@@ -676,7 +749,7 @@ export class Fract extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = fract(${argsString})`,
       dependencies: ["fract"],
@@ -709,7 +782,7 @@ export class Length extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = length(${argsString})`,
       dependencies: ["length"],
@@ -742,7 +815,7 @@ export class Log extends Node {
       })
       .filter((arg) => arg !== undefined && arg !== null)
       .join(", ");
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = log(${argsString})`,
       dependencies: ["log"],
@@ -767,4 +840,6 @@ export const MathNodes = {
   Fract,
   Length,
   Log,
+  Sin,
+  Mod,
 };

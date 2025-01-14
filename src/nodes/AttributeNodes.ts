@@ -18,7 +18,7 @@ export class UV extends Node {
     }),
   };
   public code = () => {
-    const varName = createVarNameForNode(this.id);
+    const varName = createVarNameForNode(this);
     return {
       code: `const ${varName} = uv()`,
       dependencies: ["uv"],
